@@ -1,6 +1,15 @@
 -- ============================================================
--- Git Integration — gitsigns + lazygit (via toggleterm)
+-- Git Integration — gitsigns + fugitive + lazygit (toggleterm)
 -- ============================================================
+
+local function current_file_or_warn()
+  local file = vim.api.nvim_buf_get_name(0)
+  if file == "" then
+    vim.notify("No file in current buffer", vim.log.levels.WARN)
+    return nil
+  end
+  return vim.fn.fnameescape(file)
+end
 
 return {
   -- ── Gitsigns: inline git blame, hunk navigation & staging ─
@@ -77,6 +86,48 @@ return {
     },
   },
 
+  -- ── Fugitive: full git workflows in Neovim ──────────────────
+  {
+    "tpope/vim-fugitive",
+    cmd = { "Git", "G", "Gdiffsplit", "Gvdiffsplit", "Gwrite", "Gread", "Gclog", "Gblame" },
+    keys = {
+      { "<leader>gS", "<cmd>Git<CR>",                desc = "Git status (fugitive)" },
+      {
+        "<leader>ga",
+        function()
+          local file = current_file_or_warn()
+          if not file then return end
+          vim.cmd("Git add " .. file)
+        end,
+        desc = "Git add current file",
+      },
+      { "<leader>gA", "<cmd>Git add -A<CR>",         desc = "Git add all changes" },
+      {
+        "<leader>gu",
+        function()
+          local file = current_file_or_warn()
+          if not file then return end
+          vim.cmd("Git reset HEAD -- " .. file)
+        end,
+        desc = "Git unstage current file",
+      },
+      { "<leader>gU", "<cmd>Git reset HEAD -- .<CR>", desc = "Git unstage all" },
+      {
+        "<leader>gx",
+        function()
+          local file = current_file_or_warn()
+          if not file then return end
+          vim.cmd("Git checkout -- " .. file)
+        end,
+        desc = "Git restore current file",
+      },
+      { "<leader>gm", "<cmd>Git commit<CR>",         desc = "Git commit" },
+      { "<leader>gP", "<cmd>Git push<CR>",           desc = "Git push" },
+      { "<leader>gL", "<cmd>Git pull --rebase<CR>",  desc = "Git pull (rebase)" },
+      { "<leader>gd", "<cmd>Gvdiffsplit<CR>",        desc = "Git diff split" },
+    },
+  },
+
   -- ── Lazygit inside Neovim (via toggleterm) ─────────────────
   {
     "akinsho/toggleterm.nvim",
@@ -140,6 +191,8 @@ return {
       local function set_terminal_keymaps()
         local o = { buffer = 0 }
         vim.keymap.set("t", "<ESC><ESC>", "<C-\\><C-n>", o)
+        vim.keymap.set("t", "<leader>tt", "<C-\\><C-n><cmd>ToggleTerm direction=float<CR>", o)
+        vim.keymap.set("t", "<C-\\>", "<C-\\><C-n><cmd>ToggleTerm direction=float<CR>", o)
         vim.keymap.set("t", "<C-h>", "<cmd>wincmd h<CR>", o)
         vim.keymap.set("t", "<C-j>", "<cmd>wincmd j<CR>", o)
         vim.keymap.set("t", "<C-k>", "<cmd>wincmd k<CR>", o)

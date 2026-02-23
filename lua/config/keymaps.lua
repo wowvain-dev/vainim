@@ -37,6 +37,8 @@ map("n", "<S-l>",      "<cmd>bnext<CR>",           { desc = "Next buffer" })
 map("n", "<leader>bd", "<cmd>bdelete<CR>",         { desc = "Delete buffer" })
 map("n", "<leader>bD", "<cmd>bdelete!<CR>",        { desc = "Force delete buffer" })
 map("n", "<leader>bo", "<cmd>%bd|e#|bd#<CR>",      { desc = "Close other buffers" })
+map("n", "<leader>bv", "<cmd>vsplit<CR>",          { desc = "Split buffer vertical" })
+map("n", "<leader>bs", "<cmd>split<CR>",           { desc = "Split buffer horizontal" })
 
 -- ── Tabs ─────────────────────────────────────────────────────
 map("n", "<leader>to", "<cmd>tabnew<CR>",   { desc = "New tab" })

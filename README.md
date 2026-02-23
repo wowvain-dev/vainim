@@ -23,7 +23,9 @@ lua/
     completion.lua    blink.cmp + LuaSnip + friendly-snippets
     lsp.lua           mason + mason-lspconfig + nvim-lspconfig
     formatting.lua    conform.nvim (format) + nvim-lint (lint) + mason-tool-installer
-    git.lua           gitsigns + toggleterm (lazygit)
+    git.lua           gitsigns + vim-fugitive + toggleterm (lazygit)
+    markdown.lua      markview markdown renderer
+    presence.lua      discord rich presence
     editor.lua        which-key, Comment, autopairs, nvim-surround, flash, trouble,
                       colorizer, inc-rename
   lsp/
@@ -48,7 +50,9 @@ scripts/
 | Completion     | blink.cmp + LuaSnip + friendly-snippets |
 | LSP            | nvim-lspconfig + mason.nvim + mason-lspconfig |
 | Formatting     | conform.nvim + nvim-lint + mason-tool-installer |
-| Git            | gitsigns.nvim + toggleterm (lazygit) |
+| Git            | gitsigns.nvim + vim-fugitive + toggleterm (lazygit) |
+| Markdown       | markview.nvim |
+| Presence       | presence.nvim |
 | Navigation     | flash.nvim |
 | Editing        | Comment.nvim, nvim-autopairs, nvim-surround, inc-rename |
 | UI helpers     | which-key, nvim-colorizer, todo-comments, trouble.nvim |
@@ -67,6 +71,11 @@ GDScript is handled separately (not via Mason) — connects to Godot's built-in 
 ```
 <leader>ff   find files           <leader>e    explorer toggle
 <leader>fg   live grep            <leader>tg   lazygit
+<leader>bv   split buffer vertical <leader>bs  split buffer horizontal
+<leader>um   markdown preview      <leader>uM  markdown split preview
+<leader>ga   git add file          <leader>gA  git add all
+<leader>gu   git unstage file      <leader>gm  git commit
+<leader>gP   git push              <leader>gL  git pull --rebase
 <leader>ut   theme picker         <leader>tt   floating terminal
 <leader>ub   toggle transparency  <leader>un   cycle line numbers
 <leader>lm   Mason                <leader>ca   code action
