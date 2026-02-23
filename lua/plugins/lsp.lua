@@ -165,6 +165,17 @@ return {
           end,
         },
       })
+
+      -- ── GDScript (Godot 4) — NOT managed by Mason ──────────
+      -- Godot ships its own LSP server; it listens on TCP while the editor is open.
+      -- Port: Editor Settings → Network → Language Server → Remote Port (default 6005)
+      -- Override with env var:  GDScript_Port=6005 nvim
+      vim.lsp.config("gdscript", {
+        cmd        = vim.lsp.rpc.connect("127.0.0.1", tonumber(os.getenv("GDScript_Port")) or 6005),
+        filetypes  = { "gdscript" },
+        root_markers = { "project.godot" },
+      })
+      vim.lsp.enable("gdscript")
     end,
   },
 }

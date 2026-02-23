@@ -20,6 +20,7 @@ return {
         -- Install these parsers automatically
         ensure_installed = {
           "bash", "c", "cpp", "css", "dockerfile",
+          "gdscript",
           "go", "gomod", "gowork", "gosum",
           "html", "javascript", "jsdoc", "json", "json5", "jsonc",
           "lua", "luadoc", "luap",

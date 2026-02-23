@@ -133,6 +133,11 @@ return {
   --   },
   -- },
 
+  -- ── Godot / GDScript ───────────────────────────────────────
+  -- gdscript is NOT listed here — it is NOT installed by Mason.
+  -- Godot 4 ships its own LSP server (port 6005 by default).
+  -- Configured directly in lua/plugins/lsp.lua.
+
   -- ── Documentation ──────────────────────────────────────────
   marksman = {},
 

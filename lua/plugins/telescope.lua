@@ -155,12 +155,22 @@ return {
       pcall(telescope.load_extension, "ui-select")
       pcall(telescope.load_extension, "file_browser")
 
-      -- nvim-treesitter v1.0 removed ft_to_lang; telescope's buffer previewer
-      -- still calls it. Shim it to the native nvim 0.11 API.
-      local ok, parsers = pcall(require, "nvim-treesitter.parsers")
-      if ok and type(parsers) == "table" and not parsers.ft_to_lang then
+      -- nvim-treesitter v1.0 compatibility shims for telescope's buffer previewer.
+      -- (1) parsers.ft_to_lang was removed — delegate to native vim.treesitter API
+      local ok_p, parsers = pcall(require, "nvim-treesitter.parsers")
+      if ok_p and type(parsers) == "table" and not parsers.ft_to_lang then
         parsers.ft_to_lang = function(ft)
           return vim.treesitter.language.get_lang(ft) or ft
+        end
+      end
+      -- (2) configs.is_enabled was removed — telescope calls this to check if
+      -- treesitter highlighting is available for a given language in the preview.
+      -- Return true if the parser for the language is actually installed.
+      local ok_c, ts_cfg = pcall(require, "nvim-treesitter.configs")
+      if ok_c and type(ts_cfg) == "table" and not ts_cfg.is_enabled then
+        ts_cfg.is_enabled = function(module, lang, _bufnr)
+          if module ~= "highlight" then return false end
+          return pcall(vim.treesitter.language.inspect, lang)
         end
       end
     end,
