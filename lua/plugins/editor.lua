@@ -39,6 +39,7 @@ return {
       wk.add({
         { "<leader>b",  group = "buffers" },
         { "<leader>c",  group = "code / LSP" },
+        { "<leader>d",  group = "debug" },
         { "<leader>e",  group = "explorer" },
         { "<leader>f",  group = "find / files" },
         { "<leader>g",  group = "git" },
@@ -49,6 +50,7 @@ return {
         { "<leader>r",  group = "rename" },
         { "<leader>s",  group = "split" },
         { "<leader>t",  group = "terminal / tab" },
+        { "<leader>T",  group = "tests" },
         { "<leader>u",  group = "toggle / ui" },
         { "<leader>w",  group = "workspace" },
         { "<leader>x",  group = "trouble / diagnostics" },
@@ -193,13 +195,23 @@ return {
   -- ── nvim-colorizer: highlight color codes in-line ─────────
   {
     "NvChad/nvim-colorizer.lua",
-    event = { "BufReadPost", "BufNewFile" },
+    ft = { "css", "scss", "less", "html", "javascript", "javascriptreact", "typescript", "typescriptreact", "json", "jsonc", "lua", "vim", "yaml", "toml" },
     opts = {
       filetypes = {
-        "*",
-        css   = { css = true },
-        scss  = { css = true },
-        html  = { css = true },
+        css     = { css = true },
+        scss    = { css = true },
+        less    = { css = true },
+        html    = { css = true },
+        javascript  = { css = true },
+        javascriptreact = { css = true },
+        typescript = { css = true },
+        typescriptreact = { css = true },
+        json   = { css = true },
+        jsonc  = { css = true },
+        lua    = { css = true },
+        vim    = { css = true },
+        yaml   = { css = true },
+        toml   = { css = true },
       },
       user_default_options = {
         RGB      = true,

@@ -139,7 +139,7 @@ function M.open()
     local cs = catalogue[ci].cs
     if cs ~= current_cs then
       current_cs = cs
-      pcall(vim.cmd.colorscheme, cs)
+      thm.preview(cs)
     end
   end
 
@@ -154,8 +154,7 @@ function M.open()
     if not ci then closed = false; return end  -- on a separator
     local entry = catalogue[ci]
     vim.api.nvim_win_close(win, true)
-    pcall(vim.cmd.colorscheme, entry.cs)
-    thm.save(entry.cs)
+    thm.apply(entry.cs)
     vim.notify(
       "Theme → " .. entry.label,
       vim.log.levels.INFO,
@@ -171,7 +170,7 @@ function M.open()
       vim.api.nvim_win_close(win, true)
     end
     if current_cs ~= original_cs then
-      pcall(vim.cmd.colorscheme, original_cs)
+      thm.apply(original_cs)
     end
   end
 

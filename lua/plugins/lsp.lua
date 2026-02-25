@@ -45,7 +45,6 @@ return {
       "williamboman/mason.nvim",
       "williamboman/mason-lspconfig.nvim",
       "b0o/schemastore.nvim",
-      "saghen/blink.cmp",
     },
     event = { "BufReadPre", "BufNewFile" },
     keys = {
@@ -53,6 +52,14 @@ return {
       { "<leader>lR", "<cmd>LspRestart<CR>", desc = "LSP restart" },
     },
     config = function()
+      vim.filetype.add({
+        extension = {
+          gd = "gdscript",
+          gdscript = "gdscript",
+          gdscript3 = "gdscript",
+        },
+      })
+
       -- ── Diagnostics appearance ─────────────────────────────
       -- nvim 0.10+: configure signs via vim.diagnostic.config, not sign_define
       vim.diagnostic.config({
@@ -83,6 +90,15 @@ return {
       })
 
       -- ── LSP handlers ──────────────────────────────────────
+      local workspace_diagnostic_refresh = (vim.lsp.protocol.Methods and
+        vim.lsp.protocol.Methods.workspace_diagnostic_refresh) or "workspace/diagnostic/refresh"
+      vim.lsp.handlers[workspace_diagnostic_refresh] = function()
+        -- Keep compatibility with servers that still call this method.
+        -- Neovim does not need a real refresh implementation for this
+        -- feature yet, but returning a result avoids protocol errors.
+        return vim.NIL
+      end
+
       vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
         vim.lsp.handlers.hover, { border = "rounded" }
       )
@@ -136,8 +152,19 @@ return {
         end
       end
 
-      -- ── Capabilities: blink.cmp enhances LSP completion ───
-      local capabilities = require("blink.cmp").get_lsp_capabilities()
+      -- ── Capabilities: baseline capabilities by default.
+      -- Keep this light by only reading blink capabilities if the
+      -- completion plugin is already loaded (not forcing it during startup).
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      local blink_cmp = package.loaded["blink.cmp"]
+      if blink_cmp and blink_cmp.get_lsp_capabilities then
+        capabilities = blink_cmp.get_lsp_capabilities(capabilities)
+      end
+      local workspace_caps = capabilities.workspace or {}
+      workspace_caps.diagnostic = vim.tbl_deep_extend("force", workspace_caps.diagnostic or {}, {
+        refreshSupport = false,
+      })
+      capabilities.workspace = workspace_caps
 
       -- ── Load server configs from lua/lsp/servers.lua ──────
       local servers = require("lsp.servers")
@@ -155,9 +182,16 @@ return {
         end
       end
 
+      local ensure_installed = {}
+      for name in pairs(servers) do
+        if name ~= "gdscript" then
+          table.insert(ensure_installed, name)
+        end
+      end
+
       -- Mason: install listed servers; handler enables each one after install
       require("mason-lspconfig").setup({
-        ensure_installed = vim.tbl_keys(servers),
+        ensure_installed = ensure_installed,
         automatic_installation = true,
         handlers = {
           function(server_name)
@@ -166,16 +200,27 @@ return {
         },
       })
 
-      -- ── GDScript (Godot 4) — NOT managed by Mason ──────────
-      -- Godot ships its own LSP server; it listens on TCP while the editor is open.
-      -- Port: Editor Settings → Network → Language Server → Remote Port (default 6005)
-      -- Override with env var:  GDScript_Port=6005 nvim
-      vim.lsp.config("gdscript", {
-        cmd        = vim.lsp.rpc.connect("127.0.0.1", tonumber(os.getenv("GDScript_Port")) or 6005),
-        filetypes  = { "gdscript" },
-        root_markers = { "project.godot" },
-      })
+      -- Keep GDScript enabled when opening gdscript files, even if no server package
+      -- exists in Mason.
       vim.lsp.enable("gdscript")
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("vainim-gdscript-lsp", { clear = true }),
+        pattern = { "gd", "gdscript", "gdscript3" },
+        callback = function(ev)
+          local bufnr = ev.buf
+          vim.defer_fn(function()
+            if not vim.api.nvim_buf_is_valid(bufnr) then return end
+            if vim.b[bufnr].vainim_gdscript_warned then return end
+            if vim.lsp.get_clients({ bufnr = bufnr, name = "gdscript" })[1] then return end
+
+            vim.b[bufnr].vainim_gdscript_warned = true
+            vim.notify(
+              "No GDScript LSP client on this buffer. Open Godot and keep the matching project loaded, then run :LspRestart gdscript.",
+              vim.log.levels.WARN
+            )
+          end, 900)
+        end,
+      })
     end,
   },
 }

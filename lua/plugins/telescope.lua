@@ -2,10 +2,45 @@
 -- Fuzzy Finder — Telescope
 -- ============================================================
 
+local project_root_cache = {}
+
+local function project_root(path)
+  local root_key = path or ""
+  if root_key == "" then
+    root_key = vim.uv.cwd() or ""
+    project_root_cache[root_key] = root_key
+    return root_key
+  end
+
+  local stat = vim.uv.fs_stat(root_key)
+  if stat and stat.type == "file" then
+    root_key = vim.fs.dirname(root_key)
+  end
+  if project_root_cache[root_key] ~= nil then
+    return project_root_cache[root_key]
+  end
+
+  local candidates = vim.fs.find(".git", {
+    path = root_key,
+    upward = true,
+    type = "any",
+    limit = 1,
+  })
+  if #candidates == 0 then
+    project_root_cache[root_key] = root_key
+    return root_key
+  end
+
+  local root = vim.fs.dirname(candidates[1])
+  project_root_cache[root_key] = root
+  return root
+end
+
 return {
   {
     "nvim-telescope/telescope.nvim",
     branch = "0.1.x",
+    event = "VeryLazy",
     dependencies = {
       "nvim-lua/plenary.nvim",
       -- Native FZF sorter (much faster)
@@ -24,9 +59,41 @@ return {
     cmd = "Telescope",
     keys = {
       -- Files
-      { "<leader>ff", "<cmd>Telescope find_files<CR>",                   desc = "Find files" },
+      {
+        "<leader>ff",
+        function()
+          local builtin = require("telescope.builtin")
+          local path = vim.api.nvim_buf_get_name(0)
+          if path == "" then
+            path = vim.uv.cwd() or ""
+          end
+          local root = project_root(path)
+          if root then
+            builtin.git_files({
+              cwd = root,
+              show_untracked = false,
+            })
+          else
+            builtin.find_files()
+          end
+        end,
+        desc = "Find files",
+      },
+      { "<leader>fF", "<cmd>Telescope find_files<CR>",                   desc = "Find files (all, incl. hidden)" },
       { "<leader>fr", "<cmd>Telescope oldfiles<CR>",                     desc = "Recent files" },
-      { "<leader>fb", "<cmd>Telescope file_browser<CR>",                 desc = "File browser" },
+      {
+        "<leader>fb",
+        function()
+          local builtin = require("telescope.builtin")
+          pcall(require("telescope").load_extension, "file_browser")
+          if type(builtin.file_browser) == "function" then
+            builtin.file_browser()
+            return
+          end
+          vim.notify("file_browser extension is not available", vim.log.levels.WARN)
+        end,
+        desc = "File browser",
+      },
       -- Grep
       { "<leader>fg", "<cmd>Telescope live_grep<CR>",                    desc = "Live grep" },
       { "<leader>fw", "<cmd>Telescope grep_string<CR>",                  desc = "Grep word under cursor" },
@@ -55,11 +122,24 @@ return {
     config = function()
       local telescope = require("telescope")
       local actions = require("telescope.actions")
+      local has_fd = vim.fn.executable("fd") == 1
+      local has_rg = vim.fn.executable("rg") == 1
+
+      local function make_find_command()
+        if has_fd then
+          return { "fd", "--type", "f", "--strip-cwd-prefix", "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".cache" }
+        end
+        if has_rg then
+          return { "rg", "--files", "--hidden", "--glob", "!.git", "--glob", "!node_modules", "--glob", "!.cache" }
+        end
+        return nil
+      end
 
       telescope.setup({
         defaults = {
           prompt_prefix = " ",
-          selection_caret = " ",
+          selection_caret = "> ",
+          entry_prefix = "  ",
           path_display = { "smart" },
           preview = {
             treesitter = false,
@@ -125,10 +205,8 @@ return {
         },
         pickers = {
           find_files = {
-            hidden = true,
-            find_command = vim.fn.executable("fd") == 1
-              and { "fd", "--type", "f", "--strip-cwd-prefix", "--hidden", "--follow" }
-              or nil,
+            hidden = false,
+            find_command = make_find_command(),
           },
           live_grep = {
             additional_args = function()
@@ -156,7 +234,7 @@ return {
       -- Load extensions (safe, skips missing native builds)
       pcall(telescope.load_extension, "fzf")
       pcall(telescope.load_extension, "ui-select")
-      pcall(telescope.load_extension, "file_browser")
+      -- file_browser is only loaded when used to reduce first-open cost.
 
       -- nvim-treesitter v1.0 compatibility shims for telescope's buffer previewer.
       -- (1) parsers.ft_to_lang was removed — delegate to native vim.treesitter API

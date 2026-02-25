@@ -11,8 +11,27 @@
 --   https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
 -- ============================================================
 
-return {
+local function gdscript_cmd()
+  local port = tonumber(os.getenv("GDScript_Port") or os.getenv("GDSCRIPT_PORT")) or 6005
+  return vim.lsp.rpc.connect("127.0.0.1", port)
+end
 
+local function gdscript_root_dir(fname)
+  local root = vim.fs.find({ "project.godot", ".git" }, {
+    path = vim.fs.dirname(fname),
+    upward = true,
+    type = "file",
+    limit = 1,
+  })
+  if root and root[1] then
+    return vim.fs.dirname(root[1])
+  end
+
+  -- Fall back to the current directory so the client always attaches.
+  return vim.uv.cwd()
+end
+
+return {
   -- ── Lua ────────────────────────────────────────────────────
   lua_ls = {
     settings = {
@@ -54,18 +73,27 @@ return {
 
   -- ── Data / Config formats ──────────────────────────────────
   jsonls = {
+    on_new_config = function(config)
+      config.settings = config.settings or {}
+      config.settings.json = config.settings.json or {}
+      config.settings.json.schemaStore = { enable = false, url = "" }
+      config.settings.json.schemas = require("schemastore").json.schemas()
+    end,
     settings = {
       json = {
-        schemas = require("schemastore").json.schemas(),
         validate = { enable = true },
       },
     },
   },
   yamlls = {
+    on_new_config = function(config)
+      config.settings = config.settings or {}
+      config.settings.yaml = config.settings.yaml or {}
+      config.settings.yaml.schemaStore = { enable = false, url = "" }
+      config.settings.yaml.schemas = require("schemastore").yaml.schemas()
+    end,
     settings = {
       yaml = {
-        schemaStore = { enable = false, url = "" },
-        schemas = require("schemastore").yaml.schemas(),
         validate = true,
         completion = true,
         hover = true,
@@ -96,8 +124,15 @@ return {
   rust_analyzer = {
     settings = {
       ["rust-analyzer"] = {
-        cargo = { allFeatures = true, loadOutDirsFromCheck = true },
-        checkOnSave = { command = "clippy" },
+        cargo = {
+          allFeatures = false,
+          loadOutDirsFromCheck = false,
+          buildScripts = { enable = false },
+        },
+        check = {
+          command = "check",
+        },
+        checkOnSave = false,
         procMacro = { enable = true },
         inlayHints = {
           bindingModeHints = { enable = false },
@@ -134,9 +169,13 @@ return {
   -- },
 
   -- ── Godot / GDScript ───────────────────────────────────────
-  -- gdscript is NOT listed here — it is NOT installed by Mason.
-  -- Godot 4 ships its own LSP server (port 6005 by default).
-  -- Configured directly in lua/plugins/lsp.lua.
+  gdscript = {
+    cmd = gdscript_cmd(),
+    root_dir = gdscript_root_dir,
+    filetypes = { "gd", "gdscript", "gdscript3" },
+    root_markers = { "project.godot", ".git" },
+    single_file_support = true,
+  },
 
   -- ── Documentation ──────────────────────────────────────────
   marksman = {},

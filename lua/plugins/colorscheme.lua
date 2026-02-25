@@ -1,8 +1,8 @@
 -- ============================================================
 -- COLORSCHEMES
--- All themes load at startup (lazy=false) so the picker can
--- switch between them instantly. Active theme is persisted in
--- stdpath("data")/vainim_theme — edit with <leader>ut.
+-- The default theme loads at startup; alternatives load on demand
+-- via `config.theme.apply()` when selected.
+-- Active theme is persisted in stdpath("data")/vainim_theme — edit with <leader>ut.
 -- ============================================================
 
 return {
@@ -44,7 +44,8 @@ return {
   {
     "folke/tokyonight.nvim",
     priority = 1000,
-    lazy = false,
+    lazy = true,
+    event = "VeryLazy",
     opts = {
       style = "storm",
       transparent = true,              -- use terminal background
@@ -59,7 +60,8 @@ return {
   {
     "ellisonleao/gruvbox.nvim",
     priority = 1000,
-    lazy = false,
+    lazy = true,
+    event = "VeryLazy",
     opts = {
       contrast = "hard",
       transparent_mode = true,         -- use terminal background
@@ -74,7 +76,8 @@ return {
     "rose-pine/neovim",
     name = "rose-pine",
     priority = 1000,
-    lazy = false,
+    lazy = true,
+    event = "VeryLazy",
     opts = {
       variant = "moon",
       disable_background = true,       -- use terminal background
@@ -89,7 +92,8 @@ return {
   {
     "rebelot/kanagawa.nvim",
     priority = 1000,
-    lazy = false,
+    lazy = true,
+    event = "VeryLazy",
     opts = {
       theme = "wave",
       transparent = true,              -- use terminal background

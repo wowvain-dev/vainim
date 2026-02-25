@@ -47,6 +47,7 @@ opt.swapfile = false
 opt.backup = false
 opt.undofile = true
 opt.undodir = vim.fn.stdpath("data") .. "/undodir"
+opt.fileformats = { "dos", "unix", "mac" }
 
 -- Completion
 opt.completeopt = "menu,menuone,noselect"
@@ -66,8 +67,7 @@ opt.list = true
 opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 
 -- Folds (treesitter-based, but start unfolded)
-opt.foldmethod = "expr"
-opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+opt.foldmethod = "manual"
 opt.foldenable = false
 opt.foldlevel = 99
 opt.foldlevelstart = 99

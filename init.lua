@@ -6,6 +6,11 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+-- Faster Lua module loading for startup and hot reloads (requires 0.9+)
+if vim.loader and vim.loader.enable then
+  vim.loader.enable()
+end
+
 -- Core settings (no plugin dependencies)
 require("config.options")
 require("config.keymaps")
@@ -40,7 +45,7 @@ require("lazy").setup({
     { import = "plugins" },
   },
   defaults = {
-    lazy = false,
+    lazy = true,
     version = false,
   },
   install = {
@@ -65,5 +70,17 @@ require("lazy").setup({
   },
 })
 
--- Restore the persisted colorscheme (all theme plugins are now configured)
-pcall(vim.cmd.colorscheme, require("config.theme").get())
+-- Restore the persisted colorscheme.
+require("config.theme").apply()
+
+-- Pre-load Telescope shortly after startup so first <leader>ff feels instant
+-- without adding to first-frame startup cost.
+vim.defer_fn(function()
+  local ok, lazy = pcall(require, "lazy")
+  if not ok then return end
+  pcall(lazy.load, { plugins = { "telescope.nvim" }, wait = true })
+  local ok_telescope, telescope = pcall(require, "telescope")
+  if ok_telescope then
+    pcall(telescope.load_extension, "fzf")
+  end
+end, 250)

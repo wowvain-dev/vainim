@@ -26,6 +26,7 @@ lua/
     git.lua           gitsigns + vim-fugitive + toggleterm (lazygit)
     markdown.lua      markview markdown renderer
     presence.lua      discord rich presence
+    debug.lua         nvim-dap, dap-ui, neotest
     editor.lua        which-key, Comment, autopairs, nvim-surround, flash, trouble,
                       colorizer, inc-rename
   lsp/
@@ -50,6 +51,8 @@ scripts/
 | Completion     | blink.cmp + LuaSnip + friendly-snippets |
 | LSP            | nvim-lspconfig + mason.nvim + mason-lspconfig |
 | Formatting     | conform.nvim + nvim-lint + mason-tool-installer |
+| Debugging      | nvim-dap + nvim-dap-ui + nvim-dap-virtual-text + mason-nvim-dap |
+| Testing        | neotest + neotest-python + neotest-go + neotest-vitest + neotest-plenary |
 | Git            | gitsigns.nvim + vim-fugitive + toggleterm (lazygit) |
 | Markdown       | markview.nvim |
 | Presence       | presence.nvim |
@@ -76,6 +79,11 @@ GDScript is handled separately (not via Mason) — connects to Godot's built-in 
 <leader>ga   git add file          <leader>gA  git add all
 <leader>gu   git unstage file      <leader>gm  git commit
 <leader>gP   git push              <leader>gL  git pull --rebase
+<leader>dc   debug continue/start  <leader>db  debug breakpoint
+<leader>do   debug step over       <leader>di  debug step into
+<leader>du   debug ui toggle       <leader>Td  debug nearest test
+<leader>Tr   run nearest test      <leader>Tf  run test file
+<leader>Ts   toggle test summary   <leader>TO  test output panel
 <leader>ut   theme picker         <leader>tt   floating terminal
 <leader>ub   toggle transparency  <leader>un   cycle line numbers
 <leader>lm   Mason                <leader>ca   code action
