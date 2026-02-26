@@ -162,16 +162,29 @@ return {
       local alpha = require("alpha")
       local dashboard = require("alpha.themes.dashboard")
 
-      dashboard.section.header.val = {
-        "                                                     ",
-        "                                                     ",
-        "                   |  /\\  |  |\\  |                  ",
-        "                   | /  \\ |  | \\ |                  ",
-        "                   |/ /\\ \\|  |  \\|                  ",
-        "                    /  \\    |   |                   ",
-        "                                                     ",
-        "                    v a i n i m                      ",
-      }
+      local logo = [=[
+                 ███                 
+               ███████               
+            ███  ███  ███            
+           ████  ███  ████           
+          █████  ███  █████          
+         ██████  ███  ██████         
+        ███ ███  ███  ███ ███        
+        ███ ███  ███  ███ ███        
+        ███████  ███  ███████        
+        ███ ███  ███  ███ ███        
+        ███ ███  ███  ███ ███        
+        ███ ███  ███  ███ ███        
+            ███  ███  ███            
+            ███  ███  ███            
+            ███  ███  ███            
+                 ███                 
+                 ███                 
+                 ███                 
+                                        
+              v a i n i m             
+]=]
+      dashboard.section.header.val = vim.split(logo, "\n", { plain = true, trimempty = true })
 
       dashboard.section.buttons.val = {
         dashboard.button("f", "  Find file",       "<cmd>Telescope find_files<CR>"),
