@@ -1,118 +1,131 @@
 -- ============================================================
--- Markdown Rendering — markview.nvim
+-- Markdown Rendering — render-markdown.nvim
 -- ============================================================
 
-local PRESET_PROFILES = {
-  catppuccin = { headings = "glow", horizontal_rules = "arrowed", tables = "rounded" },
-  tokyonight = { headings = "simple", horizontal_rules = "dashed", tables = "single" },
-  rose = { headings = "glow_center", horizontal_rules = "dotted", tables = "rounded" },
-  kanagawa = { headings = "slanted", horizontal_rules = "thick", tables = "double" },
-  gruvbox = { headings = "marker", horizontal_rules = "solid", tables = "rounded" },
-  light = { headings = "simple", horizontal_rules = "thin", tables = "single" },
-  dark = { headings = "arrowed", horizontal_rules = "solid", tables = "rounded" },
-}
+local RENDER_MODES = { "n", "c", "t" }
+local FILE_TYPES = { "markdown", "markdown.pandoc", "rmd", "quarto", "vimwiki", "wiki" }
 
-local function theme_profile()
-  local cs = (vim.g.colors_name or ""):lower()
-  for key, preset in pairs(PRESET_PROFILES) do
-    if key ~= "light" and key ~= "dark" and cs:find(key, 1, true) then
-      return preset
-    end
-  end
-  return vim.o.background == "light" and PRESET_PROFILES.light or PRESET_PROFILES.dark
-end
-
-local function sync_markview_blending()
-  local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
-  local bg = type(normal.bg) == "number" and string.format("#%06x", normal.bg)
-
-  if vim.o.background == "dark" then
-    vim.g.markview_dark_bg = bg or "#1e1e2e"
-    vim.g.markview_alpha = 0.16
-  else
-    vim.g.markview_light_bg = bg or "#eff1f5"
-    vim.g.markview_alpha = 0.18
-  end
-end
-
-local function markview_opts()
-  local presets = require("markview.presets")
-  local profile = theme_profile()
+local function default_options()
   return {
-    preview = {
-      enable = false,
-      enable_hybrid_mode = false,
-      icon_provider = "devicons",
-      map_gx = true,
-    },
-    markdown = {
-      headings = presets.headings[profile.headings],
-      horizontal_rules = presets.horizontal_rules[profile.horizontal_rules],
-      tables = presets.tables[profile.tables],
-      block_quotes = {
-        default = {
-          border = "▏",
-          hl = "MarkviewBlockQuoteDefault",
+    enabled = false,
+    render_modes = RENDER_MODES,
+    file_types = FILE_TYPES,
+    overrides = {
+      buftype = {
+        nofile = {
+          enabled = false,
+          render_modes = false,
         },
+      },
+    },
+    win_options = {
+      conceallevel = { default = vim.o.conceallevel, rendered = 3 },
+      concealcursor = { default = vim.o.concealcursor, rendered = "" },
+    },
+    anti_conceal = {
+      enabled = true,
+      ignore = {
+        code_background = true,
+        link_url = true,
       },
     },
   }
 end
 
-local function setup_markview()
-  sync_markview_blending()
-  require("markview").setup(markview_opts())
+local function get_preview_buffer_for_source(source_buf)
+  local preview = require("render-markdown.core.preview")
+  if not vim.api.nvim_buf_is_valid(source_buf) then
+    return nil
+  end
+
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.api.nvim_buf_is_valid(buf) and preview.get(buf) == source_buf then
+      return buf
+    end
+  end
+  return nil
 end
 
-local function has_glow_binary()
-  return vim.fn.executable("glow") == 1
+local function get_preview_window_for_source(source_buf)
+  if not vim.api.nvim_buf_is_valid(source_buf) then
+    return nil
+  end
+
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if not vim.api.nvim_win_is_valid(win) then
+      goto continue
+    end
+    local buf = vim.api.nvim_win_get_buf(win)
+    if not vim.api.nvim_buf_is_valid(buf) then
+      goto continue
+    end
+    if require("render-markdown.core.preview").get(buf) == source_buf then
+      return win
+    end
+
+    ::continue::
+  end
+  return nil
 end
 
-local function run_glow(close)
-  if not has_glow_binary() then
-    vim.notify("glow binary not found in PATH. Install it to use markdown preview.", vim.log.levels.WARN)
+local function markdown_source_buffer()
+  local current = vim.api.nvim_get_current_buf()
+  local preview = require("render-markdown.core.preview")
+  return preview.get(current) or current
+end
+
+local function close_markdown_preview_window(source_buf)
+  local preview_buf = get_preview_buffer_for_source(source_buf)
+  if not preview_buf then
+    return false
+  end
+  pcall(vim.api.nvim_buf_delete, preview_buf, { force = true })
+  return true
+end
+
+local function toggle_markdown_split_preview()
+  local renderer = require("render-markdown")
+  local preview = require("render-markdown.core.preview")
+
+  local source_buf = markdown_source_buffer()
+  if close_markdown_preview_window(source_buf) then
     return
   end
-  vim.cmd(close and "Glow!" or "Glow")
+
+  local ok, err = pcall(preview.open, source_buf)
+  if not ok then
+    vim.notify(("Failed to open markdown preview: %s"):format(err), vim.log.levels.ERROR)
+    return
+  end
+
+  local preview_win = get_preview_window_for_source(source_buf)
+  if preview_win then
+    local preview_buf = vim.api.nvim_win_get_buf(preview_win)
+    pcall(renderer.render, {
+      buf = preview_buf,
+      win = preview_win,
+    })
+  end
 end
 
 return {
   {
-    "OXY2DEV/markview.nvim",
-    lazy = true,
-    ft = { "markdown", "md" },
-    config = function()
-      setup_markview()
-      vim.api.nvim_create_autocmd("ColorScheme", {
-        group = vim.api.nvim_create_augroup("vainim_markview", { clear = true }),
-        callback = setup_markview,
-      })
-    end,
-    keys = {
-      { "<leader>um", "<cmd>Markview toggle<CR>",      desc = "Enable markdown render (markview)" },
-      { "<leader>uM", "<cmd>Markview splitToggle<CR>", desc = "Toggle markview split render" },
-    },
-  },
-  {
-    "ellisonleao/glow.nvim",
-    ft = { "markdown", "md" },
-    cmd = "Glow",
-    opts = {
-      border = "rounded",
-      pager = false,
-      width_ratio = 0.9,
-      height_ratio = 0.9,
-    },
+    "MeanderingProgrammer/render-markdown.nvim",
+    ft = FILE_TYPES,
+    dependencies = { "nvim-treesitter/nvim-treesitter", "echasnovski/mini.nvim" },
+    ---@module "render-markdown"
+    opts = default_options,
     keys = {
       {
-        "<leader>ug",
-        function() run_glow(false) end,
-        desc = "Preview markdown with glow",
+        "<leader>m",
+        toggle_markdown_split_preview,
+        desc = "Open markdown preview (split right)",
       },
       {
-        "<leader>uG",
-        function() run_glow(true) end,
-        desc = "Close glow preview",
+        "<leader>M",
+        "<cmd>RenderMarkdown buf_toggle<cr>",
+        desc = "Toggle markdown rendering (current buffer)",
       },
     },
   },

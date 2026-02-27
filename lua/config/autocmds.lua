@@ -169,6 +169,15 @@ au("ColorScheme", {
   callback = function()
     if not vim.g.vainim_transparent then return end
 
+    local function clear_bg(group)
+      -- Preserve fg/style and only remove the background layer.
+      local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
+      if not ok or type(hl) ~= "table" then return end
+      hl.bg = nil
+      hl.ctermbg = nil
+      vim.api.nvim_set_hl(0, group, hl)
+    end
+
     -- Groups that should always show the terminal background
     local bg_none = {
       -- Editor panes
@@ -177,25 +186,31 @@ au("ColorScheme", {
       "EndOfBuffer", "FoldColumn",
       -- Separators (these were causing the slant-separator artifacts)
       "VertSplit", "WinSeparator",
-      -- Float BORDERS only — keep NormalFloat with a bg so popups stay readable
+      -- Float windows (body + borders) for full transparent popups
+      "NormalFloat", "NormalFloatNC",
       "FloatBorder", "FloatTitle", "FloatFooter",
+      "FloatShadow", "FloatShadowThrough",
+      -- Popup-menu body (keep selection groups styled)
+      "Pmenu", "PmenuKind", "PmenuExtra", "PmenuMatch",
       -- nvim-tree
       "NvimTreeNormal", "NvimTreeNormalFloat",
       "NvimTreeEndOfBuffer", "NvimTreeWinSeparator",
       -- Plugin borders (which-key popup border, etc.)
-      "WhichKeyBorder", "WhichKeyNormal",
+      "WhichKey", "WhichKeyBorder", "WhichKeyNormal",
       "TelescopeBorder",
       "NoiceCmdlinePopupBorder", "NoicePopupBorder",
       "LazyNormal",
       "MasonNormal",
     }
     for _, g in ipairs(bg_none) do
-      -- Merge: preserve any existing fg/sp, only clear bg
-      local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = g, link = false })
-      if ok then
-        hl.bg      = nil
-        hl.ctermbg = nil
-        vim.api.nvim_set_hl(0, g, hl)
+      clear_bg(g)
+    end
+
+    -- which-key may define additional highlight groups in newer versions
+    -- (e.g. keycaps/icons). Clear all of them to avoid opaque patches.
+    for _, g in ipairs(vim.fn.getcompletion("", "highlight")) do
+      if g:find("^WhichKey") then
+        clear_bg(g)
       end
     end
   end,

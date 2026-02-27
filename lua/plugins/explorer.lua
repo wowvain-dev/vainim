@@ -82,7 +82,7 @@ return {
             icons = {
               corner = "└",
               edge = "│",
-              item = "│",
+              item = "├",
               bottom = "└",
               none = " ",
             },

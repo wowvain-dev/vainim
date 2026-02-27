@@ -68,13 +68,14 @@ return {
             path = vim.uv.cwd() or ""
           end
           local root = project_root(path)
-          if root then
+          if root and vim.uv.fs_stat(vim.fs.joinpath(root, ".git")) then
             builtin.git_files({
               cwd = root,
               show_untracked = false,
             })
           else
-            builtin.find_files()
+            vim.notify("No Git repository found; showing files via find_files", vim.log.levels.WARN)
+            builtin.find_files({ cwd = root })
           end
         end,
         desc = "Find files",

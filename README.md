@@ -1,8 +1,23 @@
 # vainim - personal nvim config
 
+<!--toc:start-->
+- [vainim - personal nvim config](#vainim-personal-nvim-config)
+  - [Showcase](#showcase)
+  - [Structure](#structure)
+  - [Plugins](#plugins)
+  - [Language servers](#language-servers)
+  - [Key bindings](#key-bindings)
+<!--toc:end-->
+
 I am not maintaining this config for anybody but myself, so as long as it still works for me it is unlikely that I will address an issue someone might create.
 
 Requires Neovim 0.11+. Space is leader. On first launch, lazy.nvim bootstraps itself and installs everything.
+
+## Showcase
+
+![image1](./images/code.png)
+![image2](./images/grep.png)
+![image3](./images/theme.png)
 
 ## Structure
 
