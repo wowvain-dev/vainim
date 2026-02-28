@@ -52,7 +52,9 @@ require("lazy").setup({
     colorscheme = { "catppuccin", "habamax" },
   },
   checker = {
-    enabled = true,
+    -- Background update checks have caused sporadic long-idle instability on
+    -- some Windows setups; keep them off there.
+    enabled = vim.fn.has("win32") == 0,
     notify = false, -- silently check for updates
   },
   change_detection = {

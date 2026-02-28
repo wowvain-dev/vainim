@@ -227,13 +227,65 @@ au("BufNewFile", {
   end,
 })
 
--- Clear lingering screen paint when Neovim exits in terminals that
--- sometimes keep the last frame rendered.
-au("VimLeavePre", {
-  group = augroup("terminal_cleanup"),
-  callback = function()
-    local esc = string.char(27)
-    local clear_sequence = esc .. "[0m" .. esc .. "[2J" .. esc .. "[H"
-    pcall(vim.api.nvim_chan_send, vim.v.stderr, clear_sequence)
-  end,
+-- Windows Terminal can occasionally keep input-related terminal modes enabled
+-- after long-running TUIs or abrupt exits. Reset the terminal state early in
+-- the shutdown sequence so the shell prompt does not render on a stale frame.
+local function reset_windows_terminal_state()
+  if vim.fn.has("win32") == 0 or not os.getenv("WT_SESSION") then return end
+  if vim.g.vainim_terminal_state_reset_done then return end
+
+  local reset = table.concat({
+    "\27[0m",      -- clear text attributes
+    "\27[?25h",    -- ensure cursor is visible
+    "\27[?1l",     -- normal cursor keys mode
+    "\27>",        -- normal keypad mode
+    "\27[?1000l",  -- disable mouse tracking
+    "\27[?1002l",
+    "\27[?1003l",
+    "\27[?1004l",
+    "\27[?1005l",
+    "\27[?1006l",
+    "\27[?1015l",
+    "\27[?2004l",  -- disable bracketed paste
+    "\27[>4;0m",   -- disable modifyOtherKeys
+    "\27[?1049l",  -- leave alternate screen if still enabled
+    "\27[?1047l",  -- leave legacy alternate screen
+    "\27[?47l",    -- leave legacy alternate screen
+  })
+
+  pcall(function()
+    io.stdout:write(reset)
+    io.stdout:flush()
+    vim.g.vainim_terminal_state_reset_done = true
+  end)
+end
+
+au({ "VimLeavePre", "ExitPre" }, {
+  group = augroup("terminal_state_reset"),
+  callback = reset_windows_terminal_state,
+})
+
+-- Mason registers a VimLeavePre terminator hook that can occasionally stall
+-- terminal handoff on Windows Terminal. Keep Mason enabled, but remove only
+-- that specific quit hook on this platform.
+local function prune_windows_quit_hooks()
+  if vim.fn.has("win32") == 0 or not os.getenv("WT_SESSION") then return end
+
+  for _, ac in ipairs(vim.api.nvim_get_autocmds({ event = "VimLeavePre" })) do
+    if type(ac.callback) == "function" then
+      local ok, info = pcall(debug.getinfo, ac.callback, "S")
+      local src = (ok and info and info.source) or ""
+      if src:find("mason.nvim/lua/mason/init.lua", 1, true) then
+        pcall(vim.api.nvim_del_autocmd, ac.id)
+      end
+    end
+  end
+end
+
+prune_windows_quit_hooks()
+vim.defer_fn(prune_windows_quit_hooks, 800)
+au("User", {
+  group = augroup("windows_exit_hooks"),
+  pattern = "VeryLazy",
+  callback = prune_windows_quit_hooks,
 })
