@@ -2,6 +2,7 @@
 
 <!--toc:start-->
 - [vainim - personal nvim config](#vainim-personal-nvim-config)
+  - [Setup](#setup)
   - [Showcase](#showcase)
   - [Structure](#structure)
   - [Plugins](#plugins)
@@ -12,6 +13,38 @@
 I am not maintaining this config for anybody but myself, so as long as it still works for me it is unlikely that I will address an issue someone might create.
 
 Requires Neovim 0.11+. Space is leader. On first launch, lazy.nvim bootstraps itself and installs everything.
+
+## Setup
+
+### Windows (native)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
+```
+
+This creates `%LOCALAPPDATA%\nvim` as a junction to this repo.
+
+### Linux / WSL
+
+```bash
+bash scripts/setup.sh
+```
+
+This creates `${XDG_CONFIG_HOME:-~/.config}/nvim` as a symlink to this repo.
+
+### Running both Windows and WSL
+
+If you are moving to a WSL-first flow, prefer keeping your main checkout inside WSL (for faster file I/O):
+
+```bash
+~/src/vainim
+```
+
+Then run `bash scripts/setup.sh` in WSL, and keep a separate Windows checkout for native Windows Neovim (`scripts/setup.ps1`).
+
+If you want a single shared checkout, you can keep it on a Windows drive (for example `E:\editors\vainim`) and point WSL to `/mnt/e/editors/vainim`, but Neovim/plugin startup is usually slower from `/mnt/*`.
+
+Note: plugin/tool installs are per environment (Windows and WSL maintain separate Neovim data directories).
 
 ## Showcase
 
@@ -48,6 +81,7 @@ lua/
     servers.lua       edit this to add/remove language servers
 scripts/
   setup.ps1           creates the Windows junction to %LOCALAPPDATA%\nvim
+  setup.sh            creates the Linux/WSL symlink to ~/.config/nvim
 ```
 
 ## Plugins
