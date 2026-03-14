@@ -12,16 +12,21 @@ return {
       { "<leader>lm", "<cmd>Mason<CR>", desc = "Open Mason" },
     },
     build = ":MasonUpdate",
-    opts = {
-      ui = {
-        border = "rounded",
-        icons = {
-          package_installed   = "✓",
-          package_pending     = "➜",
-          package_uninstalled = "✗",
+    opts = function()
+      local platform = require("config.platform")
+      return {
+        -- On NixOS, LSP/tool binaries come from PATH — skip mason's bin dir
+        PATH = platform.is_nixos and "skip" or "prepend",
+        ui = {
+          border = "rounded",
+          icons = {
+            package_installed   = "✓",
+            package_pending     = "➜",
+            package_uninstalled = "✗",
+          },
         },
-      },
-    },
+      }
+    end,
   },
 
   -- ── Schemastore: JSON/YAML schemas (used by jsonls & yamlls) ───────
@@ -182,6 +187,8 @@ return {
         end
       end
 
+      local platform = require("config.platform")
+
       local ensure_installed = {}
       for name in pairs(servers) do
         if name ~= "gdscript" then
@@ -189,20 +196,31 @@ return {
         end
       end
 
-      -- Mason: install listed servers; handler enables each one after install
-      require("mason-lspconfig").setup({
-        ensure_installed = ensure_installed,
-        automatic_installation = true,
-        handlers = {
-          function(server_name)
-            vim.lsp.enable(server_name)
-          end,
-        },
-      })
-
-      -- Keep GDScript enabled when opening gdscript files, even if no server package
-      -- exists in Mason.
-      vim.lsp.enable("gdscript")
+      if platform.is_nixos then
+        -- On NixOS, skip Mason installs — servers are in PATH via extraPackages.
+        -- Still load mason-lspconfig so its bridge logic is available.
+        require("mason-lspconfig").setup({
+          ensure_installed = {},
+          automatic_installation = false,
+        })
+        -- Enable all servers directly (vim.lsp.config already set up above)
+        for name in pairs(servers) do
+          vim.lsp.enable(name)
+        end
+      else
+        -- Normal: Mason installs & enables servers
+        require("mason-lspconfig").setup({
+          ensure_installed = ensure_installed,
+          automatic_installation = true,
+          handlers = {
+            function(server_name)
+              vim.lsp.enable(server_name)
+            end,
+          },
+        })
+        -- Keep GDScript enabled even though it's not in Mason
+        vim.lsp.enable("gdscript")
+      end
       vim.api.nvim_create_autocmd("FileType", {
         group = vim.api.nvim_create_augroup("vainim-gdscript-lsp", { clear = true }),
         pattern = { "gd", "gdscript", "gdscript3" },

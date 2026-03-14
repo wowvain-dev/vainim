@@ -3,6 +3,7 @@
 <!--toc:start-->
 - [vainim - personal nvim config](#vainim-personal-nvim-config)
   - [Setup](#setup)
+  - [NixOS / Nix Flakes](#nixos--nix-flakes)
   - [Showcase](#showcase)
   - [Structure](#structure)
   - [Plugins](#plugins)
@@ -46,6 +47,37 @@ If you want a single shared checkout, you can keep it on a Windows drive (for ex
 
 Note: plugin/tool installs are per environment (Windows and WSL maintain separate Neovim data directories).
 
+## NixOS / Nix Flakes
+
+vainim auto-detects NixOS and skips mason.nvim's binary downloads.
+On NixOS, LSP servers and tools must be available in `$PATH`.
+
+### Quick Setup (Home Manager module)
+
+```nix
+# In your flake inputs:
+inputs.vainim.url = "github:wowvain-dev/vainim";
+
+# In your Home Manager config:
+imports = [ inputs.vainim.homeManagerModules.default ];
+```
+
+This gives you the full config with all LSPs, formatters, linters, and DAP adapters.
+
+### Manual Setup (symlink only)
+
+```nix
+# flake input (no flake eval needed):
+inputs.vainim = { url = "github:wowvain-dev/vainim"; flake = false; };
+
+# Home Manager:
+xdg.configFile."nvim".source = inputs.vainim;
+programs.neovim = {
+  enable = true;
+  extraPackages = with pkgs; [ gcc lua-language-server /* ... */ ];
+};
+```
+
 ## Showcase
 
 ![image1](./images/code.png)
@@ -55,11 +87,13 @@ Note: plugin/tool installs are per environment (Windows and WSL maintain separat
 ## Structure
 
 ```
+flake.nix               nix flake (NixOS / Home Manager integration)
 lua/
   config/
     options.lua       vim options
     keymaps.lua       core keybindings
     autocmds.lua      autocommands (yank highlight, cursor restore, transparent bg, etc.)
+    platform.lua      platform detection (NixOS, etc.)
     theme.lua         theme persistence helpers
     theme_picker.lua  floating theme picker with live preview
   plugins/

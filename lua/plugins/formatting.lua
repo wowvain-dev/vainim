@@ -122,23 +122,27 @@ return {
     "WhoIsSethDaniel/mason-tool-installer.nvim",
     dependencies = { "williamboman/mason.nvim" },
     event = "VeryLazy",
-    opts = {
-      ensure_installed = {
-        -- Formatters
-        "stylua",
-        "prettier",
-        "shfmt",
-        "taplo",
-        -- Linters / language tools
-        "ruff",
-        "luacheck",
-        "shellcheck",
-        "markdownlint",
-        "yamllint",
-      },
-      auto_update = false,
-      run_on_start = true,
-      start_delay = 3000,
-    },
+    opts = function()
+      local platform = require("config.platform")
+      return {
+        -- On NixOS, tools come from PATH via extraPackages — skip Mason installs
+        ensure_installed = platform.is_nixos and {} or {
+          -- Formatters
+          "stylua",
+          "prettier",
+          "shfmt",
+          "taplo",
+          -- Linters / language tools
+          "ruff",
+          "luacheck",
+          "shellcheck",
+          "markdownlint",
+          "yamllint",
+        },
+        auto_update = false,
+        run_on_start = not platform.is_nixos,
+        start_delay = 3000,
+      }
+    end,
   },
 }

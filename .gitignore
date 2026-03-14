@@ -1,1 +1,6 @@
 docs/
+
+# Nix
+result
+result-*
+.direnv

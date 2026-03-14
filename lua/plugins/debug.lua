@@ -72,9 +72,12 @@ return {
         },
       })
 
+      local platform = require("config.platform")
+
       mason_dap.setup({
-        ensure_installed = { "python", "codelldb" },
-        automatic_installation = false,
+        -- On NixOS, DAP adapters come from PATH — skip Mason installs
+        ensure_installed = platform.is_nixos and {} or { "python", "codelldb" },
+        automatic_installation = not platform.is_nixos and false,
         handlers = {
           function(config)
             mason_dap.default_setup(config)
@@ -92,16 +95,25 @@ return {
         dapui.close()
       end
 
-      local debugpy_python = vim.fs.joinpath(
-        vim.fn.stdpath("data"),
-        "mason",
-        "packages",
-        "debugpy",
-        "venv",
-        "Scripts",
-        "python.exe"
-      )
-      require("dap-python").setup(vim.fn.executable(debugpy_python) == 1 and debugpy_python or "python")
+      local debugpy_python
+      if platform.is_nixos then
+        -- On NixOS, debugpy is in PATH via extraPackages
+        debugpy_python = "python3"
+      else
+        debugpy_python = vim.fs.joinpath(
+          vim.fn.stdpath("data"),
+          "mason",
+          "packages",
+          "debugpy",
+          "venv",
+          "Scripts",
+          "python.exe"
+        )
+        if vim.fn.executable(debugpy_python) ~= 1 then
+          debugpy_python = "python"
+        end
+      end
+      require("dap-python").setup(debugpy_python)
       require("dap-go").setup()
 
       pcall(require("telescope").load_extension, "dap")
